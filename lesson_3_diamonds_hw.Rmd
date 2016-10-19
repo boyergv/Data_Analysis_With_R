@@ -1,0 +1,433 @@
+---
+title: "Diamonds"
+author: "Grant Boyer"
+date: "September 1, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load diamonds}
+
+library(ggplot2)
+data(diamonds)
+summary(diamonds)
+nrow(diamonds)
+str(diamonds)
+?diamonds
+
+```
+
+## Including Plots
+
+Create a histogram of the price of
+all the diamonds in the diamond data set.
+
+TYPE YOUR CODE BELOW THE LINE
+
+```{r }
+ggplot(aes(x=price), data=diamonds) +
+        geom_histogram()
+```
+
+```{r}
+summary(diamonds$price)
+```
+
+```{r}
+table(diamonds$price < 500)
+table(diamonds$price < 250)
+table(diamonds$price >= 15000)
+```
+
+Explore the largest peak in the
+price histogram you created earlier.
+
+Try limiting the x-axis, altering the bin width,
+and setting different breaks on the x-axis.
+
+There won’t be a solution video for this
+question so go to the discussions to
+share your thoughts and discover
+what other people find.
+
+You can save images by using the ggsave() command.
+ggsave() will save the last plot created.
+For example...
+                 qplot(x = price, data = diamonds)
+                 ggsave('priceHistogram.png')
+
+ggsave currently recognises the extensions eps/ps, tex (pictex),
+pdf, jpeg, tiff, png, bmp, svg and wmf (windows only).
+
+Submit your final code when you are ready.
+
+TYPE YOUR CODE BELOW THE LINE
+
+```{r}
+ggplot(aes(x=price), data=diamonds) +
+        geom_histogram(binwidth = 50) + 
+        scale_x_continuous(breaks = seq(0,2000,500), limits=c(0,2000))
+```
+
+```{r}
+ggplot(aes(x=price), data=diamonds) +
+        geom_histogram(binwidth = 50) + 
+        facet_wrap(~cut)
+```
+
+```{r}
+by(diamonds$price, diamonds$cut, max)
+```
+
+```{r}
+by(diamonds$price, diamonds$cut, summary)
+```
+
+
+
+In the two last exercises, we looked at
+the distribution for diamonds by cut.
+
+Run the code below in R Studio to generate
+the histogram as a reminder.
+
+===============================================================
+
+qplot(x = price, data = diamonds) + facet_wrap(~cut)
+                                                                               
+===============================================================
+
+In the last exercise, we looked at the summary statistics
+for diamond price by cut. If we look at the output table, the
+the median and quartiles are reasonably close to each other.
+
+diamonds$cut: Fair
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    337    2050    3282    4359    5206   18570 
+------------------------------------------------------------------------ 
+diamonds$cut: Good
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    327    1145    3050    3929    5028   18790 
+------------------------------------------------------------------------ 
+diamonds$cut: Very Good
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    336     912    2648    3982    5373   18820 
+------------------------------------------------------------------------ 
+diamonds$cut: Premium
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    326    1046    3185    4584    6296   18820 
+------------------------------------------------------------------------ 
+diamonds$cut: Ideal
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+    326     878    1810    3458    4678   18810 
+
+This means the distributions should be somewhat similar,
+but the histograms we created don't show that.
+
+The 'Fair' and 'Good' diamonds appear to have 
+different distributions compared to the better
+cut diamonds. They seem somewhat uniform
+on the left with long tails on the right.
+
+Let's look in to this more.
+
+Look up the documentation for facet_wrap in R Studio.
+Then, scroll back up and add a parameter to facet_wrap so that
+the y-axis in the histograms is not fixed. You want the y-axis to
+be different for each histogram.
+
+If you want a hint, check out the Instructor Notes.
+
+```{r}
+ggplot(aes(x=price), data=diamonds) +
+        geom_histogram(binwidth = 50) + 
+        facet_wrap(~cut, scales="free_y")
+```
+
+Create a histogram of price per carat
+and facet it by cut. You can make adjustments
+to the code from the previous exercise to get
+started.
+
+Adjust the bin width and transform the scale
+of the x-axis using log10.
+
+Submit your final code when you are ready.
+
+ENTER YOUR CODE BELOW THIS LINE.
+===========================================================================
+
+```{r}
+ggplot(aes(x=price/carat), data=diamonds) +
+        geom_histogram(binwidth = 0.01) + 
+        facet_wrap(~cut, scales="free_y") +
+        scale_x_log10()
+```
+
+Investigate the price of diamonds using box plots,
+numerical summaries, and one of the following categorical
+variables: cut, clarity, or color.
+
+There won’t be a solution video for this
+exercise so go to the discussion thread for either
+BOXPLOTS BY CLARITY, BOXPLOT BY COLOR, or BOXPLOTS BY CUT
+to share you thoughts and to
+see what other people found.
+
+You can save images by using the ggsave() command.
+ggsave() will save the last plot created.
+For example...
+                 qplot(x = price, data = diamonds)
+                 ggsave('priceHistogram.png')
+
+ggsave currently recognises the extensions eps/ps, tex (pictex),
+pdf, jpeg, tiff, png, bmp, svg and wmf (windows only).
+
+Copy and paste all of the code that you used for
+your investigation, and submit it when you are ready.
+=================================================================
+
+```{r}
+by_cut <- ggplot(aes(x=cut, y=price), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+by_clarity <- ggplot(aes(x=clarity, y=price), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+by_color <- ggplot(aes(x=color, y=price), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+require(gridExtra)
+grid.arrange(by_cut, by_clarity, by_color, ncol=3)
+```
+
+
+If we look at all three boxplots of cut, clarity, and color, we see something interesting. It would appear that the better diamonds tend to have tighter distributions and also lower prices, when compared to inferior quality diamonds in each category! The ideal cut diamonds have a lower median price than fair diamonds. Clarity IF has a lower median price than clarity I1. Color D is lower than color J. It does not make a lot of sense. Maybe there is a lurking variable throwing off our expectations... like carat.
+
+```{r}
+by_cut_carat <- ggplot(aes(x=cut, y=price/carat), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+by_clarity_carat <- ggplot(aes(x=clarity, y=price/carat), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+by_color_carat <- ggplot(aes(x=color, y=price/carat), data=diamonds) +
+        geom_boxplot()
+```
+
+```{r}
+require(gridExtra)
+grid.arrange(by_cut_carat, by_clarity_carat, by_color_carat, ncol=3)
+```
+
+That makes more sense. Now we can see that the means are typically the same, but the outliers demonstrate a clear trend. There are more high outliers of higher quality diamonds by cut, clarity, and color.
+
+Now let's look at the 25th percentile, 75th percentile, and IQR of the best color diamonds and the worst color diamonds:
+
+```{r}
+quantile(subset(diamonds, color=="D")$price)
+```
+
+```{r}
+quantile(subset(diamonds, color=="J")$price)
+```
+
+```{r}
+IQR(subset(diamonds, color=="D")$price)
+```
+
+```{r}
+IQR(subset(diamonds, color=="J")$price)
+```
+
+Investigate the weight of the diamonds (carat) using a frequency polygon. Use different bin widths to see how the frequency polygon changes. What carat size has a count greater than 2000? Answers: 0.3 and 1.01
+
+```{r}
+ggplot(aes(x=carat), data=diamonds) +
+        geom_freqpoly(binwidth=0.1) +
+        scale_x_continuous(breaks=seq(0,5,0.1), limits=c(0,1.5)) +
+        scale_y_continuous(limits=c(2000,11000))
+```
+
+The Gapminder website contains over 500 data sets with information about
+the world's population. Your task is to download a data set of your choice
+and create 2-5 plots that make use of the techniques from Lesson 3.
+
+You might use a simple histogram, a boxplot split over a categorical variable,
+or a frequency polygon. The choice is yours!
+
+You can find a link to the Gapminder website in the Instructor Notes.
+
+Once you've completed your investigation, create a post in the discussions that includes:
+      1. any questions you answered, your observations, and summary statistics
+      2. snippets of code that created the plots
+      3. links to the images of your plots
+
+You can save images by using the ggsave() command.
+ggsave() will save the last plot created.
+For example...
+                 qplot(x = price, data = diamonds)
+                 ggsave('priceHistogram.png')
+
+ggsave currently recognises the extensions eps/ps, tex (pictex),
+pdf, jpeg, tiff, png, bmp, svg and wmf (windows only).
+
+Copy and paste all of the code that you used for
+your investigation, and submit it when you are ready.
+====================================================================================
+
+```{r}
+setwd("~/MOOCs/Udacity/R Data Science")
+require(xlsx)
+require(dplyr)
+require(tidyr)
+```
+
+```{r}
+healthspending <- read.xlsx(file = "healthcarespendingperperson.xlsx", sheetIndex = "Data")
+summary(healthspending)
+str(healthspending)
+```
+
+We need to reshape this data to get a year variable, as well as rename the country column.
+
+```{r}
+tidyhs <- healthspending %>% gather(year, spending, X1995:X2010)
+rm(healthspending)
+```
+
+```{r}
+names(tidyhs)[1] <- "country"
+```
+
+```{r}
+require(ggplot2)
+ggplot(aes(x=year, y=spending), data=tidyhs) +
+        geom_boxplot() +
+        ggtitle("Health Care Spending Per Person By Year") +
+        xlab("Spending (US Dollars)") + 
+        ylab("Count")
+```
+
+```{r}
+ggplot(aes(x=spending), data=tidyhs) +
+        geom_histogram() +
+        scale_x_log10() +
+        ggtitle("Health Care Spending Per Person") +
+        xlab("Spending (US Dollars)") + 
+        ylab("Count")
+```
+
+```{r}
+ggplot(aes(x=spending, color=year), data=tidyhs) +
+        geom_freqpoly() +
+        scale_x_log10()
+```
+
+Your task is to investigate the distribution of your friends'
+birth months and days.
+
+Here some questions you could answer, and we hope you think of others.
+
+**********************************************************************
+
+How many people share your birthday? Do you know them?
+(Reserve time with them or save money to buy them a gift!)
+
+Which month contains the most number of birthdays?
+
+How many birthdays are in each month?
+
+Which day of the year has the most number of birthdays?
+
+Do you have at least 365 friends that have birthdays on everyday
+of the year?
+
+**********************************************************************
+
+You will need to do some data munging and additional research to
+complete this task. This task won't be easy, and you may encounter some
+unexpected challenges along the way. We hope you learn a lot from it though.
+
+You can expect to spend 30 min or more on this task depending if you
+use the provided data or obtain your personal data. We also encourage you
+to use the lubridate package for working with dates. Read over the documentation
+in RStudio and search for examples online if you need help.
+
+You'll need to export your Facebooks friends' birthdays to a csv file.
+You may need to create a calendar of your Facebook friends’ birthdays
+in a program like Outlook or Gmail and then export the calendar as a
+csv file.
+
+Once you load the data into R Studio, you can use the strptime() function
+to extract the birth months and birth days. We recommend looking up the
+documentation for the function and finding examples online.
+
+We've included some links in the Instructor Notes to help get you started.
+
+Once you've completed your investigation, create a post in the discussions that includes:
+      1. any questions you answered, your observations, and summary statistics
+      2. snippets of code that created the plots
+      3. links to the images of your plots
+
+You can save images by using the ggsave() command.
+ggsave() will save the last plot created.
+For example...
+                 qplot(x = price, data = diamonds)
+                 ggsave('priceHistogram.png')
+
+ggsave currently recognises the extensions eps/ps, tex (pictex),
+pdf, jpeg, tiff, png, bmp, svg and wmf (windows only).
+
+Copy and paste all of the code that you used for
+your investigation below the line. Submit it when you are ready.
+===============================================================================
+
+```{r}
+birthdays <- read.csv("birthdaysExample.csv")
+str(birthdays)
+summary(birthdays)
+
+birthdays$betterdates <- as.Date(birthdays$dates, format = "%m/%d/%y")
+birthdays$year <- format(birthdays$betterdates, "20%y")
+birthdays$month <- format(birthdays$betterdates, "%m")
+birthdays$day <- format(birthdays$betterdates, "%d")
+
+table(birthdays$month == "01" & birthdays$day == "31")
+
+table(birthdays$month)
+
+summary(birthdays$betterdates)
+
+hist(x=birthdays$betterdates, breaks="months", freq = TRUE)
+
+hist(x=birthdays$betterdates, breaks="weeks", freq = TRUE)
+
+hist(x=birthdays$betterdates, breaks="days", freq = TRUE)
+
+ggplot(aes(x=as.numeric(day)), data = birthdays) +
+        geom_histogram(binwidth = 1) +
+        scale_x_continuous(breaks = c(1:31))
+
+sort(table(birthdays$dates), decreasing = TRUE)[1:3]
+
+```

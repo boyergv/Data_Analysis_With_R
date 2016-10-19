@@ -1,0 +1,347 @@
+Lesson 5
+========================================================
+
+### Multivariate Data
+Notes:
+
+```{r}
+setwd("~/MOOCs/Udacity/R Data Science")
+pf <- read.csv("pseudo_facebook.tsv", sep = "\t")
+require(ggplot2)
+require(gridExtra)
+```
+
+
+***
+
+### Moira Perceived Audience Size Colored by Age
+Notes: Moira tried breaking out the perceived audience size by age to see if she could see any pattersn. She made color the indicator. It turned out that there was no signal in the data.
+
+***
+
+### Third Qualitative Variable
+Notes:
+
+```{r Third Qualitative Variable}
+require(dplyr)
+
+pf.fc_by_age_gender <- pf %>%
+        filter(!is.na(gender)) %>%
+        group_by(age, gender) %>%
+        summarize(
+                mean_friend_count = mean(friend_count),
+                median_friend_count = median(friend_count),
+                n = n()
+        ) %>%
+        ungroup() %>%
+        arrange(age)
+```
+
+***
+
+### Plotting Conditional Summaries
+Notes:
+
+```{r Plotting Conditional Summaries}
+ggplot(aes(x = age, y = median_friend_count), data = pf.fc_by_age_gender) +
+        geom_line(aes(color = gender))
+```
+
+***
+
+### Thinking in Ratios
+Notes:
+
+***
+
+### Wide and Long Format
+Notes: The long format refers to data that repeats itself. In our pf.fc by age gender dataframe, we can see that age repeats itself twice -- once for females and once for males. We can instead convert this to a wide format, where there will be only one record for each age, but there will be two columns instead of one for median age -- one for females and one for males.
+
+***
+
+### Reshaping Data
+Notes:
+
+```{r}
+library(reshape2)
+```
+
+```{r}
+require(dplyr)
+require(tidyr)
+#pf.fc_by_age_gender.wide <- subset(pf.fc_by_age_gender[c('age', 'gender', 'median_friend_count')],                   !is.na(gender)) %>%
+#    spread(gender, median_friend_count) %>%
+#    mutate(ratio = male / female)
+
+#head(pf.fc_by_age_gender.wide)
+
+pf.fc_by_age_gender.wide <- dcast(pf.fc_by_age_gender,
+                                  age ~ gender, 
+                                  value.var = 'median_friend_count')
+
+head(pf.fc_by_age_gender.wide)
+```
+
+
+***
+
+### Ratio Plot
+Notes:
+
+```{r Ratio Plot}
+ggplot(aes(x = age, y = female / male), data = pf.fc_by_age_gender.wide) +
+        geom_line() +
+        geom_hline(aes(yintercept = 1), linetype = 2)
+```
+
+***
+
+### Third Quantitative Variable
+Notes:
+
+```{r Third Quantitative Variable}
+pf$year_joined <- floor(2014 - (pf$tenure / 365))
+```
+
+***
+
+### Cut a Variable
+Notes: Cut is a function that can dicide the range of data into intervals and codes the values in the data according to which bucket they fall into. It takes a variable, like year joined, and then provides an interval for which that variable falls. We can plot and compare data based on this interval provided by cut.
+
+```{r Cut a Variable}
+summary(pf$year_joined)
+table(pf$year_joined)
+
+pf$year_joined.bucket <- cut(pf$year_joined, breaks = c(2004, 2009, 2011, 2012, 2014))
+```
+
+***
+
+### Plotting it All Together
+Notes: It looks like our instincts were right -- friend counts for longer tenured users is higher than the friend counts of more recent users who joined Facebook. 
+
+```{r Plotting it All Together}
+ggplot(aes(x = age, y = friend_count), data = subset(pf, !is.na(year_joined.bucket))) +
+        geom_line(aes(color = year_joined.bucket), stat = "summary", fun.y = median)
+```
+
+***
+
+### Plot the Grand Mean
+Notes: In this plot, we are looking at the mean instead of the median. Plotting the grand mean reminds us that much of this data is reliant on people who joined in recent cohorts. The grand mean is a lot closer to the more recent cohorts than the one from 2004 - 2009. 
+
+```{r Plot the Grand Mean}
+ggplot(aes(x = age, y = friend_count), data = subset(pf, !is.na(year_joined.bucket))) +
+        geom_line(aes(color = year_joined.bucket), stat = "summary", fun.y = median) +
+        geom_line(stat = "summary", fun.y = mean, linetype = 2)
+```
+
+***
+
+### Friending Rate
+Notes:
+
+What is the median friend rate? 0.2205
+
+What is the maximum friend rate? 417.0000
+
+```{r Friending Rate}
+with(subset(pf, tenure >= 1), summary(friend_count / tenure))
+```
+
+***
+
+### Friendships Initiated
+Notes: How many friendships are initiated per day across users of various tenure? Using the mean of friendships initiated per day, plot the line for users of each tenure. It looks like users with one day of tenure average a little under 10 friendships per day, while users of longer tenure initiate less than one friendship per day of tenure. Users tend to make a lot of friends early on after signing up for Facebook, and then taper off their friending spree. This graph is a bit noisy though. I wonder what we could do to minimize that noise?
+
+```{r Friendships Initiated}
+ggplot(aes(x = tenure, y = (friendships_initiated / tenure)), data = subset(pf, tenure >= 1)) +
+        geom_line(aes(color = year_joined.bucket), stat = "summary", fun.y = mean)
+```
+
+***
+
+### Bias-Variance Tradeoff Revisited
+Notes: Friendships initiated still declines as tenure increases. But in the first four graphs, we can see that we can manually smooth our graph by rounding off the tenure variable. Or, we could use geom_smooth instead of geom line to let R's default values figure out the optimal way to smooth the line.
+
+```{r Bias-Variance Tradeoff Revisited}
+
+p1 <- ggplot(aes(x = tenure, y = friendships_initiated / tenure),
+       data = subset(pf, tenure >= 1)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = 'summary',
+            fun.y = mean)
+
+p2 <- ggplot(aes(x = 7 * round(tenure / 7), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+p3 <- ggplot(aes(x = 30 * round(tenure / 30), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+p4 <- ggplot(aes(x = 90 * round(tenure / 90), y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_line(aes(color = year_joined.bucket),
+            stat = "summary",
+            fun.y = mean)
+
+grid.arrange(p1, p2, p3, p4, ncol = 1)
+
+ggplot(aes(x = tenure, y = friendships_initiated / tenure),
+       data = subset(pf, tenure > 0)) +
+  geom_smooth(aes(color = year_joined.bucket))
+
+```
+
+***
+
+### Sean's NFL Fan Sentiment Study
+Notes: Sean Taylor did a nice analysis to look at sentiment of NFL fans over time. He had to combine a couple graphs, to get something not too smooth, yet not too noisy. He used splines partially.
+
+***
+
+### Introducing the Yogurt Data Set
+Notes: Yogurt data that is structured differently than the Facebook data. This data has many rows per household, one for each purchase occasion. One might call it "microdata."
+
+***
+
+### Histograms Revisited
+Notes: We want to convert the id variable into a factor, because we really won't be doing any math with the id, even though it is a number.
+
+```{r Histograms Revisited}
+yo <- read.csv("yogurt.csv")
+str(yo)
+
+yo$id <- factor(yo$id)
+str(yo)
+
+ggplot(aes(x = price, fill = "red"), data = yo) +
+        geom_histogram()
+```
+
+***
+
+### Number of Purchases
+Notes: Transform is a generic function that creates a new variable based off a set of current variables. It returns a dataframe, so it needs to get re-saved back to the data frame that was originally called.
+
+```{r Number of Purchases}
+summary(yo$price)
+length(unique(yo$price))
+table(yo$price)
+
+yo <- transform(yo, all.purchases = strawberry + blueberry + pina.colada + plain + mixed.berry)
+```
+
+***
+
+### Prices over Time
+Notes: To look at a time series plot, we want to compensate for overplotting by providing an alpha value. We use geom_jitter to space ou the observations a bit. It looks like the most prices stay stable for three periods of time. Time zero through 9800 seems to be one price, 9800 through 10100 another, and 10100 through the end of the time series a third higher price. The yogurt company must be increasing price over time. The points below the lines might be customers using coupons to lower the price of the yogurt.
+
+```{r Prices over Time}
+ggplot(aes(x = time, y = price), data = yo) +
+        geom_jitter(aes(color = "orange"), alpha = 1/10)
+```
+
+***
+
+### Sampling Observations
+Notes: When working with data that contains multiple observations for the same units, it is often useful to work with a sample of those units in order to make it easy to display the raw data for that sample. Here, we might want to look at a sample of households to look at it in more detail. 
+
+***
+
+### Looking at Samples of Households
+
+Notes: We use levels because that will only pick ids from a unique list of ids -- there will be no repicking the same id. It looks like there is a lot of variation among the second sample that I took. I can't honestly tell if there is a patter between any of the customer's behaviors.
+
+```{r Looking at Sample of Households}
+set.seed(4230)
+
+sample.ids <- sample(levels(yo$id), 16)
+
+ggplot(aes(x = time, y = price), data = subset(yo, id %in% sample.ids)) +
+        geom_line() +
+        facet_wrap( ~ id) +
+        geom_point(aes(size = all.purchases), shape = 1)
+
+set.seed(42)
+
+sample.ids2 <- sample(levels(yo$id), 16)
+
+ggplot(aes(x = time, y = price), data = subset(yo, id %in% sample.ids2)) +
+        geom_line() +
+        facet_wrap( ~ id) +
+        geom_point(aes(size = all.purchases), shape = 1)
+
+ggsave("yogurtplot.png")
+
+```
+
+***
+
+### The Limits of Cross Sectional Data
+Notes:
+
+***
+
+### Many Variables
+Notes: We want the data to speak to identify variables of interest. Scatterplot matrices are particularly useful for this when there are two quantitative variables.
+
+***
+
+### Scatterplot Matrix
+Notes:
+
+```{r}
+library(GGally)
+theme_set(theme_minimal(20))
+
+set.seed(1836)
+pf_subset <- pf[, c(3:15)]
+ggpairs(pf_subset[sample.int(nrow(pf_subset), 1000), ], axisLabels = 'internal')
+ggsave("ggpairsplot.png")
+names(pf_subset)
+```
+
+
+***
+
+### Even More Variables
+Notes:
+
+***
+
+### Heat Maps
+Notes:
+
+```{r}
+nci <- read.table("nci.tsv")
+colnames(nci) <- c(1:64)
+```
+
+```{r}
+nci.long.samp <- melt(as.matrix(nci[1:200,]))
+names(nci.long.samp) <- c("gene", "case", "value")
+head(nci.long.samp)
+
+ggplot(aes(y = gene, x = case, fill = value),
+  data = nci.long.samp) +
+  geom_tile() +
+  scale_fill_gradientn(colours = colorRampPalette(c("blue", "red"))(100))
+```
+
+
+***
+
+### Analyzing Three of More Variables
+Reflection: I learned how to look at multiple variables together. I learned how to take data with multiple observations per customer in the yogurt set and plot the data over time. I learned how to sample data using levels of an id key. I learned how to change the data of a geom point so that the size represented the value being plotted over a given price over time. I learned how to create aggreate variables with 'transform.' I learned how to transform variables to create new variables, like creating the year joined variable in the Facebook data. I learned how to create different buckets of data, which contain different sizes of data. I learned how to add grand means to plots over means for different bucketed data. I learned how to make summary data, grouped by different variables. I learned how to take data and dcast it so that it shows up in a wide format -- taking a variable that is faceted over two categorical variables (like age and gender) and then make it so that one of those categorical variables' values all become column variables, and the value in the dataframe is a quantitative value associated with the categorical variables -- that can be useful when trying to create ratio graphs.
+
+***
+
+Click **KnitHTML** to see all of your hard work and to have an html
+page of this lesson, your answers, and your notes!
+

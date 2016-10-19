@@ -1,0 +1,226 @@
+2016 Election Contribution Project - Michigan
+========================================================
+
+***
+
+### Contributions by Candidate
+Notes: First, we need to read in the data and take a look at the structure.
+
+```{r Reading in the Data}
+setwd("~/MOOCs/Udacity/R Data Science")
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(grid)
+library(gridExtra)
+library(zoo)
+camp = read.csv("campaigncontributionsmichigan.csv")
+names(camp)
+head(camp)
+camp$contb_receipt_dt <- as.Date(camp$contb_receipt_dt, format = "%d-%b-%y")
+```
+
+```{r}
+summary(camp$contb_receipt_amt)
+```
+
+```{r}
+table(camp$cand_id)
+```
+
+Notes: There are a lot of candidates. Some candidates seem to receive a lof of contributions in Michigan, while one candidate received only two contributions. It might be valuable to look at only the top eight candidates when running our comparisons.
+
+```{r}
+majorcandidates <- table(camp$cand_id)
+majorcandidates[order(majorcandidates, decreasing = TRUE)]
+
+camp_reduced <- subset(camp, cand_id == "P60007168" |
+                         cand_id == "P00003392" |
+                         cand_id == "P60006111" |
+                         cand_id == "P60005915" |
+                         cand_id == "P80001571" |
+                         cand_id == "P60006723" |
+                         cand_id == "P40003576" |
+                         cand_id == "P60003670")
+```
+
+Notes: Looking at a summary of contribution receipt amounts, we see an odd observation -- a campaign refunded a contributor 5,400 dollars at one point. When looking at statistics in the future, we might want to filter out negative contribution values. Furthermore, we see the that mean for contribution amount was approximately $86, while the median contribution was $27. Median values are less sensitive to extreme outliers, so the $27 might be a more reasonable representation of the middle of the distribution.
+
+```{r}
+summary(camp_reduced$contb_receipt_amt)
+```
+
+Notes: If we take a look at a histogram of contribution amounts in Michigan, we can see that there is a clear right-skewed distribution extending from 0 to 11,000 dollars. The vast majority of contribution sizes seem to be under 250 dollars.
+
+***
+```{r}
+ggplot(aes(x = contb_receipt_amt), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  geom_histogram(binwidth = 100) +
+  scale_x_continuous(breaks = seq(0,11000,500))
+```
+
+Notes: Because this distribution is so right-skewed, it might be helpful to see it against a log base 10 x-scale. We set bins to 50 so that we can see that people tend to give round dollar amounts.
+
+```{r}
+ggplot(aes(x = contb_receipt_amt), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  geom_histogram(bins = 50) +
+  scale_x_log10()
+```
+
+Notes: Taking a look at the distribution of contributions by candidate,we again see generally right-skewed distributions. Out of major candidates, we see that a large number of donations went to Bernie Sanders and Hilary Clinton.
+
+```{r}
+ggplot(aes(x = contb_receipt_amt, fill = cand_nm), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  facet_wrap(~ cand_nm)+
+  geom_histogram() +
+  scale_x_continuous(breaks = seq(0,11000,1000))
+```
+
+Notes: To get a better sense of the distributions by candidate, we transform the x-axis into log base 10. Again, Bernie Sanders and Hillary Clinton seem to have the most contributors. With the x-axis transformed, Ben Carson, Hillary Clinton, Ted Cruz, Bernie Sanders, and Donald Trump seem to have normal distributions. John Kasich, Rand Paul, and Marco Rubio do not register in a meaningful way on the plots. One surprise is Ben Carson, whose candidacy did not have much traction nationally, but he is a native of Detroit, MI, so it would make sense that many of his contributors would come from Michigan.
+
+```{r}
+ggplot(aes(x = contb_receipt_amt, fill = cand_nm), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  facet_wrap(~ cand_nm)+
+  geom_histogram() +
+  scale_x_log10() +
+  xlab("Contribution ($)") +
+  ylab("Count") +
+  ggtitle("Size of Contributions by Major Candidate in Michigan")
+```
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  geom_point(alpha = 1/50)
+```
+
+In the next graph, we clip the top 1% of contribution amounts from the data set to get a better look at the bulk of contributions. We color the graph, red for individual contributions and blue for funds transferred from authorized entities (i.e. organizations). We see that in Michigan, Hillary Clinton and Donald Trump are the two candidates that received notable contributions from outside organizations. We also can see the reluctance of Michiganians to contribute to Donald Trump's campaign. We see the drop off of contributions to candidates as they withdrew from the race, with donations to Bernie Sanders tapering off only once the Democratic convention clinched Clinton as the nominee.
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = subset(camp_reduced, contb_receipt_amt > 0)) +
+  geom_jitter(aes(color = form_tp), alpha = 1/50) +
+  facet_wrap(~cand_nm) +
+  scale_y_continuous(limits = c(0, quantile(camp_reduced$contb_receipt_amt, 0.99)))
+```
+
+```{r}
+majoroccupations <- table(camp_reduced$contbr_occupation)
+head(majoroccupations[order(majoroccupations, decreasing = TRUE)],8)
+
+camp_reduced_emp <- subset(camp_reduced, contbr_occupation == "RETIRED" |
+                         contbr_occupation == "NOT EMPLOYED" |
+                         contbr_occupation == "INFORMATION REQUESTED" |
+                         contbr_occupation == "PROFESSOR" |
+                         contbr_occupation == "ENGINEER" |
+                         contbr_occupation == "TEACHER" |
+                         contbr_occupation == "HOMEMAKER" |
+                         contbr_occupation == "PHYSICIAN")
+```
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = camp_reduced_emp) +
+  geom_jitter(aes(color = contbr_occupation)) +
+  scale_colour_brewer(palette = "Accent")
+```
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = subset(camp_reduced_emp, contb_receipt_amt > 0)) +
+  geom_jitter(aes(color = contbr_occupation)) +
+  facet_wrap(~cand_nm) +
+  scale_y_continuous(limits = c(0, quantile(camp_reduced$contb_receipt_amt, 0.99))) +
+  scale_colour_brewer(palette = "Accent")
+```
+
+```{r}
+tb <- camp_reduced %>% 
+  filter(contb_receipt_amt > 0) %>%
+  group_by(cand_nm, contb_receipt_dt) %>%
+  summarize(mean = mean(contb_receipt_amt),
+            median = median(contb_receipt_amt))
+
+ggplot(aes(x = contb_receipt_dt, y = median), data = tb) +
+  geom_line(aes(color = cand_nm)) +
+  facet_wrap(~cand_nm)
+```
+
+looking at the median contribution by month. I grouped the data by candidate and the month of the contribution so that we can look at how the median changed monthly. I also used the zoo package to plot the dates correctly on the x-axis and rotated the labels by 45 degrees. 
+
+```{r}
+camp_reduced$month <- format(camp_reduced$contb_receipt_dt, "%b/%y")
+camp_reduced$month <- as.yearmon(camp_reduced$month, "%b/%y")
+
+tb <- camp_reduced %>% 
+  filter(contb_receipt_amt > 0) %>%
+  group_by(cand_nm, month) %>%
+  summarize(mean = mean(contb_receipt_amt),
+            median = median(contb_receipt_amt)) %>%
+  arrange(month)
+
+ggplot(aes(x = month, y = median), data = tb) +
+  geom_line(aes(color = cand_nm)) +
+  facet_wrap(~cand_nm) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_yearmon()
+```
+
+Let's look at the same graphs by mean.
+
+```{r}
+ggplot(aes(x = month, y = mean), data = tb) +
+  geom_line(aes(color = cand_nm, group = 1)) +
+  facet_wrap(~cand_nm) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_yearmon() +
+  ggtitle("Mean donation by candidate by month")
+```
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt, fill = cand_nm), data = subset(camp_reduced, contb_receipt_amt > 0 & month > "Jan 2015")) +
+  facet_wrap(~ cand_nm)+
+  geom_point(aes(color = form_tp), alpha = 1/50) +
+  geom_line(aes(color = "red"), stat = "summary", fun.y = median) +
+  xlab("Dates") +
+  ylab("Donation") +
+  ggtitle("Median donation by candidate by source and scatterplot")
+```
+
+Nice. Let's take a look at contributions by city?
+
+```{r}
+citytbl <- table(camp_reduced$contbr_city)
+
+head(citytbl[order(citytbl, decreasing = TRUE)], 8)
+
+camp_topcities <- subset(camp_reduced, contbr_city == "ANN ARBOR" |
+                         contbr_city == "GRAND RAPIDS" |
+                         contbr_city == "DETROIT" |
+                         contbr_city == "KALAMAZOO" |
+                         contbr_city == "LANSING" |
+                         contbr_city == "ROYAL OAK" |
+                         contbr_city == "EAST LANSING" |
+                         contbr_city == "TRAVERSE CITY")
+```
+
+Candidate donations by city
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = subset(camp_topcities, contb_receipt_amt > 0 & contb_receipt_dt > "2015-01-01")) +
+  geom_jitter(aes(color = contbr_city, shape = form_tp)) +
+  scale_y_continuous(limits = c(0, quantile(camp_reduced$contb_receipt_amt, 0.99))) +
+  facet_wrap(~ cand_nm) +
+  scale_colour_brewer(palette = "Accent")
+```
+
+City donations by candidate. Sanders was strong in Detroit early, but Clinton has taken over since the convention. Ann Arbor and Lansing followed similar patterns. Grand Rapids, Kalamazoo, and to a lesser extent Lansing supported Carson early on in the campaign season. Later, all three favored Sanders and then even later Clinton. Royal Oak and Traverse City supported Sanders earlier on, and then later started contributing to Clinton.
+
+```{r}
+ggplot(aes(x = contb_receipt_dt, y = contb_receipt_amt), data = subset(camp_topcities, contb_receipt_amt > 0 & contb_receipt_dt > "2015-01-01")) +
+  geom_jitter(aes(color = cand_nm, shape = form_tp)) +
+  scale_y_continuous(limits = c(0, quantile(camp_reduced$contb_receipt_amt, 0.99))) +
+  facet_wrap(~ contbr_city) +
+  scale_colour_brewer(palette = "Accent") +
+  ggtitle("Contributions by city by candidate in Michigan") +
+  ylab("Size of Contribution ($)") +
+  xlab("Date of Contribution")
+```
+
+

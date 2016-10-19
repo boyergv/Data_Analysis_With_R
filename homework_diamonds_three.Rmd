@@ -1,0 +1,124 @@
+---
+title: "homework_diamonds_three"
+author: "Grant Boyer"
+date: "September 10, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(ggplot2)
+library(gridExtra)
+data(diamonds)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+ggplot(aes(x = price, fill = cut), data = diamonds) +
+        geom_histogram() +
+        facet_wrap(~ color)
+```
+
+```{r}
+ggplot(aes(x = price, fill = cut), data = diamonds) +
+        geom_histogram() +
+        facet_wrap(~ color) +
+        scale_fill_brewer(type = 'qual')
+```
+
+```{r}
+ggplot(aes(x = table, y = price, color = cut), data = diamonds) +
+        geom_jitter() +
+        scale_x_continuous(limits = c(50,80)) +
+        scale_color_brewer(type = 'qual')
+```
+
+It looks like the table range for a ideal cut diamond is about 53 - 57, while the premium cut diamond tends to have a table value of about 58 - 62.
+
+Let's take a look at how volume relates to price. Let's take the x, y, and z variables to create a volume for each diamond, and then plot it against price. We can change the scatterplot to show the clarity of each diamond on the plot. We also want to remove points that are in the top 1% of volume.
+
+```{r}
+diamonds <- transform(diamonds, volume = x * y * z)
+
+ggplot(aes(x = volume, y = price), data = diamonds) +
+        geom_point(aes(color = clarity)) +
+        scale_y_log10() +
+        xlim(0, quantile(diamonds$volume, 0.99)) +
+        scale_color_brewer(type = 'div')
+```
+
+```{r}
+pf <- read.csv("pseudo_facebook.tsv", sep='\t')
+pf <- transform(pf, prop_initiated = friendships_initiated / friend_count)
+```
+
+```{r}
+pf$year_joined <- floor(2014 - (pf$tenure / 365))
+pf$year_joined.bucket <- cut(pf$year_joined, breaks = c(2004, 2009, 2011, 2012, 2014))
+
+ggplot(aes(x = tenure, y = prop_initiated), data = pf) +
+        geom_line(aes(color = year_joined.bucket), stat="summary", fun.y = median)
+```
+
+People joining after 2012 seem to initiate greatest proportion of friend requests.
+
+```{r}
+ggplot(aes(x = tenure, y = prop_initiated), data = pf) +
+        geom_smooth(aes(color = year_joined.bucket), stat="summary", fun.y = median)
+```
+
+The mean proportion of friendships initiated by users in the 2012 - 2014 bucket was 0.6653892. This group of users might have a higher proportion of friendships initiated when compared to other buckets of users because they are new to Facebook, they need to create their initial group of friends. They are not part of enough social networks to have other people start to see them among the networks of friends. They need a critical mass of friends to get noticed by others.
+
+```{r}
+library(dplyr)
+mean_prop_initiated_by_year_bucket <- pf %>% filter(!is.na(prop_initiated)) %>% group_by(year_joined.bucket) %>% summarize(mean(prop_initiated))
+```
+
+The following plot shows the price to carat ratio on the y axis, with the type of cut over the x axis, faceted over clarity and colored by color of the diamond. For very clear diamonds, we see that the color is very important, and color of type D is fetching the most money. For diamonds that are not very clear, like SI1, we see that some of the best colored diamonds are actually some of the lowest prices. This plot shows a possible relationship between clarity of a diamond and color, and the effect it has on price when you take the weight (carat) into account.
+
+```{r}
+ggplot(aes(x = cut, y = price / carat), data = diamonds) +
+        geom_jitter(aes(color = color)) +
+        facet_wrap(~ clarity) +
+        scale_color_brewer(type = 'div')
+```
+
+Gapminder dataset:
+
+```{r}
+require(xlsx)
+require(tidyr)
+
+crashes <- read.csv("airplanecrashes.csv")
+crashes$Date <- as.Date(crashes$Date, format="%m/%d/%Y")
+crashes$year <- as.numeric(format(crashes$Date, format="%Y"))
+crashes$month <- as.numeric(format(crashes$Date, format="%m"))
+crashes$day <- as.numeric(format(crashes$Date, format="%d"))
+str(crashes)
+
+ggplot(aes(x = month), data = subset(crashes, year > 1980)) +
+        geom_histogram(bins = 12) +
+        scale_x_continuous(breaks = c(1:12)) +
+        ggtitle("Count of Crashes by Month (1980 and after)") +
+        ylab("Count") +
+        xlab("Month")
+```
+
+```{r}
+ggplot(aes(x = year, y = Fatalities), data = crashes) +
+        geom_line() +
+        facet_wrap(~month) +
+        scale_x_continuous(breaks = c(1:12)) +
+        ggtitle("Count of Crashes by Year faceted by Month") +
+        ylab("Count") +
+        xlab("Month")
+```
+
